@@ -1,16 +1,13 @@
 pipeline {
     agent {
         docker {
-            // Official image with Maven + Java 17
             image 'maven:3.9.9-eclipse-temurin-17'
-            // Cache Maven repo between builds for speed (optional but nice)
             args '-v $HOME/.m2:/root/.m2'
         }
     }
 
     options {
         timestamps()
-        ansiColor('xterm')
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
 
@@ -50,10 +47,8 @@ pipeline {
 
         stage('Publish Reports') {
             steps {
-                // JUnit XML results (for Jenkins test trend)
                 junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml,target/failsafe-reports/*.xml'
 
-                // Serenity HTML report (needs "HTML Publisher" plugin installed)
                 publishHTML([
                     reportDir: 'target/site/serenity',
                     reportFiles: 'index.html',
@@ -62,7 +57,6 @@ pipeline {
                     reportName: 'Serenity Test Report'
                 ])
 
-                // Optional: archive all Serenity report files
                 archiveArtifacts artifacts: 'target/site/serenity/**', fingerprint: true
             }
         }
@@ -73,7 +67,7 @@ pipeline {
             echo "Build finished with status: ${currentBuild.currentResult}"
         }
         failure {
-            echo "Build failed. Check Serenity report and JUnit test results."
+            echo "Build failed. Check Serenity report and JUnit results."
         }
     }
 }
