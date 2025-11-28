@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.9-eclipse-temurin-17'
-            args '-v $HOME/.m2:/root/.m2'
-        }
-    }
+    agent any
 
     options {
         timestamps()
@@ -37,9 +32,10 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh """
-                    mvn -B clean verify \
-                      -Denvironment=${params.ENVIRONMENT} \
+                // assumes "mvn" is on PATH for the Jenkins user
+                bat """
+                    mvn -B clean verify ^
+                      -Denvironment=${params.ENVIRONMENT} ^
                       "-Dheadless.mode=${params.HEADLESS}"
                 """
             }
