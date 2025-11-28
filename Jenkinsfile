@@ -32,7 +32,7 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                // assumes "mvn" is on PATH for the Jenkins user
+                // Windows environment -> use bat
                 bat """
                     mvn -B clean verify ^
                       -Denvironment=${params.ENVIRONMENT} ^
@@ -40,28 +40,31 @@ pipeline {
                 """
             }
         }
-
-        stage('Publish Reports') {
-            steps {
-                junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml,target/failsafe-reports/*.xml'
-
-                publishHTML([
-                    reportDir: 'target/site/serenity',
-                    reportFiles: 'index.html',
-                    keepAll: true,
-                    alwaysLinkToLastBuild: true,
-                    reportName: 'Serenity Test Report'
-                ])
-
-                archiveArtifacts artifacts: 'target/site/serenity/**', fingerprint: true
-            }
-        }
     }
 
     post {
+        // This ALWAYS runs, even if mvn fails
         always {
+            echo "Publishing test results and Serenity report..."
+
+            // JUnit XML test results (Surefire)
+            junit allowEmptyResults: true, testResults: 'target/surefire-reports/TEST-*.xml'
+
+            // Serenity HTML report (HTML Publisher plugin required)
+            publishHTML(target: [
+                reportDir: 'target/site/serenity',
+                reportFiles: 'index.html',
+                reportName: 'Serenity Test Report',
+                keepAll: true,
+                alwaysLinkToLastBuild: true
+            ])
+
+            // Optional: archive the full Serenity report
+            archiveArtifacts artifacts: 'target/site/serenity/**', fingerprint: true
+
             echo "Build finished with status: ${currentBuild.currentResult}"
         }
+
         failure {
             echo "Build failed. Check Serenity report and JUnit results."
         }
